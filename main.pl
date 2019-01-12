@@ -11,7 +11,10 @@ main :-
   tcp_listen(SocketId, 5),
   call_cleanup(
     accept_loop(SocketId),
-    ignore(tcp_close_socket(SocketId))
+    (
+      ignore(tcp_close_socket(SocketId)),
+      format("Server down~n")
+    )
   ).
 
 
