@@ -6,8 +6,8 @@ handle_connection(Socket) :-
     tcp_open_socket(Socket, StreamPair),
     handle_http_request(StreamPair),
     (
-      close(StreamPair),
-      tcp_close_socket(Socket)
+      ignore(close(StreamPair)),
+      ignore(tcp_close_socket(Socket))
     )
   ).
 

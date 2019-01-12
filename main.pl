@@ -8,7 +8,7 @@ main :-
   tcp_listen(SocketId, 5),
   call_cleanup(
     accept_loop(SocketId),
-    tcp_close_socket(SocketId)
+    ignore(tcp_close_socket(SocketId))
   ).
 
 
