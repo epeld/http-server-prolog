@@ -2,6 +2,7 @@
 :- module(main, [main/0]).
 :- use_module(library(socket)).
 
+:- use_module(meta, [ignore_safe_print/1]).
 :- use_module(http, [handle_connection/1]).
 
 main :-
@@ -17,11 +18,5 @@ main :-
 accept_loop(SocketId) :-
   tcp_accept(SocketId, Slave, Peer),
   format("Accepted ~w~n", [Peer]),
-  ignore(
-    catch(
-      handle_connection(Slave),
-      _Err,
-      true
-    )
-  ),
+  ignore_safe_print(handle_connection(Slave)),
   accept_loop(SocketId).
