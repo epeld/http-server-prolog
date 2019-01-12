@@ -15,23 +15,51 @@ handle_connection(Socket) :-
 
 
 handle_http_request(StreamPair) :-
-  parse_http_request(StreamPair, Method, URL, _Headers),
-  format("~s ~s~n", [Method, URL]),
+  parse_http_request(StreamPair, Method, URL, Version, _Headers),
+  format("~s ~s ~s~n", [Method, URL, Version]),
   format(StreamPair, "HTTP/1.1 200 OK~nContent-Length: 0~n~n", []).
 
 
-parse_http_request(StreamPair, Method, URL, Headers) :-
+parse_http_request(StreamPair, Method, URL, Version, Headers) :-
   format("Parsing..~n"),
-  phrase_from_stream(http_request(Method, URL, Headers), StreamPair), !,
+  phrase_from_stream(http_request(Method, URL, Version, Headers), StreamPair), !,
   format("Done..~n").
 
 
-http_request(Method, URL, []) -->
-  anything(Method), " ", anything(URL), " ", "HTTP/1.1", newline, rest.
+http_request(Method, URL, Version, []) -->
+  anything(Method), " ", anything(URL), " ", http_version(Version), cr, lf, rest.
 
 
-newline --> [13, 10] ; [13] ; [10].
+cr --> [13].
+lf --> [10].
 
+
+http_version(Version) -->
+  "HTTP/", version_number(Version).
+
+
+version_number([N | Rest]) -->
+  number_or_dot(N),
+  version_number1(Rest).
+
+version_number1([N | Rest]) -->
+  number_or_dot(N),
+  (version_number1(Rest) ; {Rest = []}).
+
+number_or_dot(N) -->
+  digit(N).
+
+number_or_dot(N) -->
+  ".",
+  {
+    [N] = "."
+  }.
+
+digit(N) -->
+  [N],
+  {
+    member(N, "123456789.")
+  }.
 
 anything([R]) --> [R].
 anything([R | Anything]) --> [R], anything(Anything).
