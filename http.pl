@@ -17,16 +17,16 @@ handle_connection(Socket) :-
 
 handle_http_request(StreamPair) :-
   format("Parsing..~n"),
-  stream_pair(StreamPair, In, _Out), tcp_fcntl(In, setfl, nonblock),
-  phrase_from_stream(http_request(Anything), StreamPair), !,
+  phrase_from_stream(http_request(Method, URL), StreamPair), !,
   format("Done..~n"),
-  string_codes(String, Anything),
-  format("~w~n", [String]),
+  format("~s ~s~n", [Method, URL]),
   format(StreamPair, "HTTP/1.1 200 OK~nContent-Length: 0~n~n", []).
 
 
-http_request(Text) -->
-  anything(Text), [13], rest.
+http_request(Method, URL) -->
+  anything(Method), " ", anything(URL), " ", "HTTP/1.1", newline, rest.
+
+newline --> [13, 10] ; [13] ; [10].
 
 anything([R]) --> [R].
 anything([R | Anything]) --> [R], anything(Anything).
