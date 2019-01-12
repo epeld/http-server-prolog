@@ -22,5 +22,4 @@ accept_loop(SocketId) :-
       true
     )
   ),
-  accept_loop(SocketId)
-.
+  accept_loop(SocketId).
