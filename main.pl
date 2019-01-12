@@ -1,4 +1,7 @@
 
+:- module(main, [main/0]).
+:- use_module(http, [handle_connection/1]).
+
 main :-
   tcp_socket(SocketId),
   tcp_bind(SocketId, localhost:8080),

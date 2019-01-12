@@ -1,4 +1,6 @@
 
+:- module(http, [handle_connection/1]).
+
 handle_connection(Socket) :-
   setup_call_cleanup(
     tcp_open_socket(Socket, StreamPair),
