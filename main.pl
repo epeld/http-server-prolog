@@ -1,5 +1,7 @@
 
 :- module(main, [main/0]).
+:- use_module(library(socket)).
+
 :- use_module(http, [handle_connection/1]).
 
 main :-
