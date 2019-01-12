@@ -31,4 +31,4 @@ http_request(Text) -->
 anything([R]) --> [R].
 anything([R | Anything]) --> [R], anything(Anything).
 
-rest(A,A).
+rest(_,[]).
