@@ -9,6 +9,10 @@ main :-
   tcp_socket(SocketId),
   tcp_bind(SocketId, localhost:8080),
   tcp_listen(SocketId, 5),
+  thread_create(acceptor_main(SocketId), ThreadId, [alias(http_acceptor)]),
+  format("Spawned thread ~w for handling incoming requests~n", [ThreadId]).
+
+acceptor_main(SocketId) :-
   call_cleanup(
     accept_loop(SocketId),
     (
@@ -16,7 +20,6 @@ main :-
       format("Server down~n")
     )
   ).
-
 
 accept_loop(SocketId) :-
   tcp_accept(SocketId, Slave, Peer),
