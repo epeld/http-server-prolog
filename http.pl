@@ -21,9 +21,8 @@ handle_http_request(StreamPair) :-
 
 
 parse_http_request(StreamPair, Method, URL, Version, Headers) :-
-  format("Parsing..~n"),
-  phrase_from_stream(http_request(Method, URL, Version, Headers), StreamPair), !,
-  format("Done..~n").
+  phrase_from_stream(http_request(Method, URL, Version, Headers), StreamPair),
+  !.
 
 
 http_request(Method, URL, Version, Headers) -->
