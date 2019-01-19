@@ -1,5 +1,7 @@
 :- module(http, [handle_connection/1]).
 :- use_module(meta, [ignore_safe/1]).
+:- use_module(library(http/json), [json_read/2]).
+:- use_module(library(memfile), [new_memory_file/1, open_memory_file/3]).
 
 :- set_prolog_flag(double_quotes, codes).
 
@@ -15,19 +17,91 @@ handle_connection(Socket) :-
 
 
 handle_http_request(StreamPair) :-
-  parse_http_request(StreamPair, Method, URL, Version, Headers),
+  parse_http_request(StreamPair, Method, URL, Version, Headers, Body),
   format("~s ~s ~s ~w~n", [Method, URL, Version, Headers]),
+  format("~w~n", [Body]),
   format(StreamPair, "HTTP/1.1 200 OK~nContent-Length: 0~n~n", []).
 
 
-parse_http_request(StreamPair, Method, URL, Version, Headers) :-
-  phrase_from_stream(http_request(Method, URL, Version, Headers), StreamPair),
-  !.
+parse_http_request(StreamPair, Method, URL, Version, Headers, Body) :-
+  parse_http_url_line(StreamPair, Method, URL, Version),
+  parse_headers(StreamPair, Headers),
+  parse_body(StreamPair, Headers, Body).
 
 
-http_request(Method, URL, Version, Headers) -->
-  anything(Method), " ", anything(URL), " ", http_version(Version), cr, lf, headers(Headers), rest.
+parse_http_url_line(Stream, Method, URL, Version) :-
+  read_line_to_codes(Stream, Line),
+  phrase(
+    (
+      anything(Method), " ", anything(URL), " ", http_version(Version)
+    ),
+    Line
+  ).
 
+parse_headers(Stream, Headers) :-
+  read_line_to_codes(Stream, Line),
+  headers_line(Stream, Line, Headers).
+
+headers_line(_Stream, [], []).
+headers_line(Stream, Line, [H | Rest]) :-
+  phrase(header(H), Line),
+  parse_headers(Stream, Rest).
+
+%
+% Body-Parsing
+%
+
+parse_body(Stream, Headers, Body) :-
+  message_length(Headers, Length),
+  !,
+  parse_body_length(Stream, Length, Headers, Body).
+
+parse_body(_, _Headers, nothing) :-
+  /* \+ message_length(Headers, _) */ true.
+
+parse_body_length(Stream, Length, Headers, Body) :-
+  % We now set up a buffer and read the full body into it before continuing
+  format("Body contains ~w bytes~n", [Length]),
+  setup_call_cleanup(
+    new_memory_file(Handle),
+    (
+      setup_call_cleanup(
+        open_memory_file(Handle, write, BufferOut),
+        copy_stream_data(Stream, BufferOut, Length),
+        close(BufferOut)
+      ),
+      setup_call_cleanup(
+        open_memory_file(Handle, read, BufferIn),
+        parse_contents(BufferIn, Headers, Body),
+        close(BufferIn)
+      )
+    ),
+    free_memory_file(Handle)
+  ).
+
+print_memory_file_info(Handle) :-
+  size_memory_file(Handle, Size),
+  format("Buffered ~w bytes~n", [Size]),
+  memory_file_to_codes(Handle, Codes),
+  format("Body buffer now contains: '~w'~n", [Codes]).
+
+parse_contents(Stream, Headers, Body) :-
+  member("content-type" : "application/json", Headers),
+  format("Parsing JSON..~n"),
+  json_read(Stream, Body).
+
+message_length(Headers, Length) :-
+  member("message-length" : Len, Headers),
+  !,
+  number_codes(Length, Len).
+
+message_length(Headers, Length) :-
+  member("content-length" : Len, Headers),
+  number_codes(Length, Len).
+
+%
+% DCG
+%
 
 cr --> [13].
 lf --> [10].
@@ -46,11 +120,16 @@ headers([]) --> crlf.
 header(Name : Value) -->
   header_name(CName), ":", sp, header_value(CValue),
   {
-    %% string_codes(Name, CName),
-    %% string_codes(Value, CValue)
-    Name = CName,
-    Value = CValue
+    downcase_codes(CName, Name),
+    downcase_codes(CValue, Value)
+    %% Name = CName,
+    %% Value = CValue
   }.
+
+downcase_codes(In, Out) :-
+  atom_codes(Atom, In),
+  downcase_atom(Atom, OutAtom),
+  atom_codes(OutAtom, Out).
 
 header_name([A | Rest]) -->
   letter_or_dash(A),
