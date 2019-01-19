@@ -1,5 +1,7 @@
 :- module(http, [handle_connection/1]).
 :- use_module(meta, [ignore_safe/1]).
+:- use_module(request_handler, [handle_request/6]).
+
 :- use_module(library(http/json), [json_read/2]).
 :- use_module(library(memfile), [new_memory_file/1, open_memory_file/3]).
 
@@ -18,9 +20,9 @@ handle_connection(Socket) :-
 
 handle_http_request(StreamPair) :-
   parse_http_request(StreamPair, Method, URL, Version, Headers, Body),
-  format("~s ~s ~s ~w~n", [Method, URL, Version, Headers]),
-  format("~w~n", [Body]),
-  format(StreamPair, "HTTP/1.1 200 OK~nContent-Length: 0~n~n", []).
+  stream_pair(StreamPair, _In, Out),
+  format("Dispatching ~s ~s~n", [Method, URL]),
+  handle_request(Method, URL, Version, Headers, Body, Out).
 
 
 parse_http_request(StreamPair, Method, URL, Version, Headers, Body) :-
