@@ -22,7 +22,12 @@ handle_http_request(StreamPair) :-
   parse_http_request(StreamPair, Method, URL, Version, Headers, Body),
   stream_pair(StreamPair, _In, Out),
   format("Dispatching ~s ~s~n", [Method, URL]),
-  handle_request(Method, URL, Version, Headers, Body, Out).
+  !,
+  trace(handle_request, +all),
+  (
+    once(handle_request(Method, URL, Version, Headers, Body, Out)) *-> true
+  ; (format("Handler failed~n"), fail)
+  ).
 
 
 parse_http_request(StreamPair, Method, URL, Version, Headers, Body) :-
