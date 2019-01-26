@@ -23,10 +23,18 @@ handle_http_request(StreamPair) :-
   stream_pair(StreamPair, _In, Out),
   format("Dispatching ~s ~s~n", [Method, URL]),
   !,
-  (
-    once(handle_request(Method, URL, Version, Headers, Body, Out)) *-> true
-  ; (format("Handler failed~n"), fail)
+  Context = [body(Body), version(Version), headers(Headers)],
+  setup_call_cleanup(
+    tell(Out),
+    (
+      once(
+        handle_request(Method, URL, Context)
+      ) *-> true
+    ; fail
+    ),
+    told
   ).
+
 
 
 parse_http_request(StreamPair, Method, URL, Version, Headers, Body) :-
