@@ -40,10 +40,14 @@ parse_http_url_line(Stream, Method, URL, Version) :-
   read_line_to_codes(Stream, Line),
   phrase(
     (
-      anything(Method), " ", anything(URL), " ", http_version(Version)
+      anything(MethodCodes), " ", anything(URLCodes), " ", http_version(VersionCodes)
     ),
     Line
-  ).
+  ),
+  atom_codes(AMethod, MethodCodes),
+  downcase_atom(AMethod, Method),
+  string_codes(URL, URLCodes),
+  string_codes(Version, VersionCodes).
 
 parse_headers(Stream, Headers) :-
   read_line_to_codes(Stream, Line),
@@ -127,8 +131,9 @@ headers([]) --> crlf.
 header(Name : Value) -->
   header_name(CName), ":", sp, header_value(CValue),
   {
-    downcase_codes(CName, Name),
-    downcase_codes(CValue, Value)
+    string_codes(AName, CName),
+    string_lower(AName, Name),
+    string_codes(Value, CValue)
     %% Name = CName,
     %% Value = CValue
   }.
