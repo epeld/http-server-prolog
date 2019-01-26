@@ -7,7 +7,7 @@ SWI-Prolog already has a working HTTP server implementation, but I choose to ign
 
 ## Starting the Server
 
-Load *main.pl* and call *main/0*. This should start the server on *localhost:8080*.
+Load *load.pl*. This should launch the server automatically on *localhost:8080*.
 
 Now try curling:
 
